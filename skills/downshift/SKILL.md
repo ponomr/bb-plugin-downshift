@@ -25,6 +25,32 @@ quota. Anonymous undated groups require all original members to recover;
 unknown/error, reorder, label changes or disappearance are not recovery.
 Never toggle a user's global mode merely for QA; no model calls are needed.
 
+## RPC reference
+
+Call any method with `bb plugin rpc call downshift <method> --json`. Methods
+with input take `--input-file <path>` holding JSON. A refusal, such as a missing
+native capability, a stale generation or a changed selection, exits non-zero
+with a message. Read-only methods are safe to call at any time.
+
+- `economy_state` (no input): the mode, phase, generation, profile, issue
+  lists, `configurationId`, and the `automatic` status when auto is enabled.
+- `economy_configuration` (no input): `{nativeAvailable, configuration}`,
+  where `configuration` is the saved selection or `null`.
+- `economy_catalog` with `{"providerId": null}`: the available providers and
+  whether each one reports usage. With `{"providerId": "<id>"}` it also returns
+  that provider's confirmed models, reasoning levels and service tiers.
+- `economy_configure` with a full selection:
+  `{"version":1,"providerId":"<id>","primaryModel":"<model>","profile":{"model":"<model>","reasoningLevel":"<id>","serviceTier":"default"},"autoEnabled":false}`.
+  It checks the selection against the live catalog before saving and is
+  refused unless Downshift is off. `autoEnabled: true` requires a provider that
+  reports usage.
+- `economy_set` with
+  `{"enabled":true,"expectedGeneration":<generation>,"requestId":"<new UUID>","configurationId":"<from economy_state>"}`
+  switches the mode. Take `generation` and `configurationId` from a fresh
+  `economy_state`. If the result is uncertain, retry with the same
+  `requestId`. A new decision needs a new UUID. This changes the user's
+  global mode: call it only when the user asks for a switch.
+
 A full shared quota cannot be bypassed by choosing a smaller model.
 
 The companion implementation and exact clean-source helper are in
